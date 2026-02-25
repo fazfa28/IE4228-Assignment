@@ -19,6 +19,35 @@ dataset/
 
 Run:
   python live_pca_face_recog.py
+
+  Live Face Recognition System (Non-Deep Learning)
+
+Steps implemented:
+
+1. Load gallery images from dataset (≥10 images per person).
+2. Detect faces using Viola–Jones Haar Cascade.
+3. Preprocess faces:
+      - Convert to grayscale
+      - Crop and resize to fixed size (e.g. 120×120)
+      - Normalize illumination (CLAHE / histogram equalization)
+      - Optional eye alignment
+4. Convert each face image to a vector.
+5. Train PCA (Eigenfaces):
+      - Compute mean face
+      - Extract principal components
+      - Project training faces into PCA feature space.
+6. Recognition:
+      - Detect face from live camera
+      - Apply same preprocessing
+      - Project into PCA space
+      - Compare with gallery using nearest neighbor.
+7. Unknown decision:
+      - If distance > threshold → label as "Unknown".
+8. Temporal smoothing:
+      - Majority vote over recent frames to reduce flicker.
+9. Display result with bounding box, name, and FPS.
+
+This pipeline follows classical face recognition methods without deep learning.
 """
 
 import os
