@@ -45,6 +45,10 @@ while True:
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
+        #cropping the image
+        cropped_image = frame[y-10:y+h+10, x-10:x+w+10]
+        cv2.imshow("Cropped Face", cropped_image)
+
     # Show frame
     cv2.imshow("Viola-Jones Face Detection", frame)
 
