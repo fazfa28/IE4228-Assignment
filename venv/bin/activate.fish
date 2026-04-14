@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/fazil/Documents/Univ/IE4228/venv
+set -gx VIRTUAL_ENV /Users/fazil/Desktop/EE4228/IE4228-Assignment/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
