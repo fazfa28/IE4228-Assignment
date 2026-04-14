@@ -1,0 +1,404 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .root { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; background: var(--color-background-primary); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+  .badge-live { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-idle { background: var(--color-background-secondary); color: var(--color-text-tertiary); border: 1px solid var(--color-border-tertiary); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge-live .badge-dot { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .title-text { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .subtitle-text { font-size: 12px; color: var(--color-text-tertiary); }
+  .stats-row { display: flex; gap: 20px; }
+  .stat { text-align: right; }
+  .stat-label { font-size: 11px; color: var(--color-text-tertiary); }
+  .stat-val { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .body { display: flex; height: 520px; }
+  .main { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--color-border-tertiary); min-width: 0; }
+  .tabs { display: flex; border-bottom: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+  .tab { padding: 8px 16px; font-size: 12px; color: var(--color-text-tertiary); cursor: pointer; border: none; background: transparent; border-bottom: 2px solid transparent; transition: color 0.15s; }
+  .tab:hover { color: var(--color-text-primary); }
+  .tab.active { color: var(--color-text-primary); border-bottom: 2px solid var(--color-text-primary); font-weight: 500; }
+  .panel { flex: 1; display: none; overflow-y: auto; }
+  .panel.active { display: flex; flex-direction: column; }
+  .cam-area { flex: 1; background: var(--color-background-tertiary); border-bottom: 1px solid var(--color-border-tertiary); position: relative; display: flex; align-items: center; justify-content: center; min-height: 400px; }
+  .cam-placeholder { text-align: center; color: var(--color-text-tertiary); }
+  .cam-placeholder svg { margin-bottom: 8px; opacity: 0.4; }
+  .cam-placeholder p { font-size: 12px; }
+  .detection-bar { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-tertiary); min-height: 52px; }
+  .det-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 2px; }
+  .det-name { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .det-name.unknown { color: var(--color-text-danger); }
+  .det-name.match { color: var(--color-text-success); }
+  .det-meta { display: flex; gap: 8px; align-items: center; }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .chip-match { background: var(--color-background-success); color: var(--color-text-success); }
+  .chip-unknown { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .chip-conf { background: var(--color-background-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border-tertiary); }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 14px; }
+  .person-card { border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 14px 10px; text-align: center; background: var(--color-background-secondary); }
+  .person-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--color-background-tertiary); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 18px; border: 1px solid var(--color-border-tertiary); }
+  .person-name { font-size: 11px; color: var(--color-text-primary); font-weight: 500; margin-bottom: 3px; }
+  .person-status { font-size: 10px; color: var(--color-text-success); }
+  .metrics-table { padding: 14px; }
+  .met-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--color-border-tertiary); }
+  .met-row:last-child { border-bottom: none; }
+  .met-key { font-size: 12px; color: var(--color-text-secondary); }
+  .met-val { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .sidebar { width: 256px; display: flex; flex-direction: column; flex-shrink: 0; }
+  .section { padding: 14px 16px; border-bottom: 1px solid var(--color-border-tertiary); }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .btn-start { width: 100%; padding: 9px; border: none; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-start.idle { background: var(--color-text-primary); color: var(--color-background-primary); }
+  .btn-start.idle:hover { opacity: 0.85; }
+  .btn-start.live { background: var(--color-background-danger); color: var(--color-text-danger); border: 1px solid var(--color-border-danger); }
+  .btn-start.live:hover { opacity: 0.85; }
+  .algo-row { display: flex; gap: 6px; margin-top: 10px; }
+  .algo-btn { flex: 1; padding: 6px; border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); font-size: 11px; font-weight: 500; cursor: pointer; background: transparent; color: var(--color-text-secondary); transition: all 0.15s; }
+  .algo-btn.selected { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
+  .slider-group { margin-top: 10px; }
+  .slider-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .slider-name { font-size: 12px; color: var(--color-text-secondary); }
+  .slider-val { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  input[type=range] { width: 100%; accent-color: var(--color-text-primary); margin-bottom: 10px; }
+  .pipeline { }
+  .pipe-step { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--color-border-tertiary); }
+  .pipe-step:last-child { border-bottom: none; }
+  .pipe-num { font-size: 11px; color: var(--color-text-tertiary); width: 20px; flex-shrink: 0; }
+  .pipe-label { font-size: 12px; color: var(--color-text-secondary); flex: 1; }
+  .pipe-label.active-step { color: var(--color-text-primary); font-weight: 500; }
+  .pipe-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border-secondary); flex-shrink: 0; }
+  .pipe-dot.active-dot { background: var(--color-text-success); animation: pulse 1.4s ease-in-out infinite; }
+  .pipe-dot.dim { opacity: 0.3; }
+  .log-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .log-header { padding: 10px 16px 8px; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--color-border-tertiary); }
+  .log-body { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .log-entry { display: flex; gap: 8px; padding: 4px 16px; font-size: 11px; line-height: 1.5; }
+  .log-time { color: var(--color-text-tertiary); flex-shrink: 0; font-family: var(--font-mono); }
+  .log-msg { color: var(--color-text-secondary); }
+  .log-msg.success { color: var(--color-text-success); }
+  .log-msg.warn { color: var(--color-text-warning); }
+  .log-msg.danger { color: var(--color-text-danger); }
+  .no-det { font-size: 12px; color: var(--color-text-tertiary); }
+  .cam-live-indicator { position: absolute; top: 10px; left: 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-text-success); font-weight: 500; }
+  .det-box { position: absolute; border: 2px solid var(--color-text-success); border-radius: 2px; top: 28%; left: 28%; width: 44%; height: 46%; pointer-events: none; transition: border-color 0.4s; }
+  .det-box.unknown { border-color: var(--color-text-danger); }
+</style>
+
+<div class="root">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="title-text">Face recognition system</div>
+        <div class="subtitle-text">IE4228 — Traditional / Deep learning</div>
+      </div>
+      <div id="status-badge" class="badge badge-idle"><span class="badge-dot"></span> Idle</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">FPS</div><div class="stat-val" id="fps-val">—</div></div>
+      <div class="stat"><div class="stat-label">Frames</div><div class="stat-val" id="frame-val">—</div></div>
+      <div class="stat"><div class="stat-label">Gallery</div><div class="stat-val">7</div></div>
+      <div class="stat"><div class="stat-label">Method</div><div class="stat-val" id="method-val">PCA+LDA</div></div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="main">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('live',this)">Live feed</button>
+        <button class="tab" onclick="switchTab('gallery',this)">Gallery</button>
+        <button class="tab" onclick="switchTab('metrics',this)">Metrics</button>
+      </div>
+
+      <!-- Live tab -->
+      <div class="panel active" id="tab-live">
+        <div class="cam-area" id="cam-area">
+          <img id="video_feed" src="{{ url_for('video_feed') }}" alt="Live Feed" style="display:none; width:100%; height:100%; object-fit:contain;">
+          <div class="cam-placeholder" id="cam-placeholder">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="5" width="20" height="15" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+            <p>Camera offline — press Start to begin</p>
+          </div>
+        </div>
+        <div class="detection-bar">
+          <div id="det-content">
+            <span class="no-det">No detection</span>
+          </div>
+          <div class="det-meta" id="det-meta" style="display:none">
+            <span id="det-chips"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gallery tab -->
+      <div class="panel" id="tab-gallery">
+        <div class="gallery-grid" id="gallery-grid"></div>
+      </div>
+
+      <!-- Metrics tab -->
+      <div class="panel" id="tab-metrics">
+        <div class="metrics-table" id="metrics-table"></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="section">
+        <div class="section-title">Controls</div>
+        <div style="margin-bottom: 12px;">
+          <label for="recognition_method" style="display: block; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px;">Method:</label>
+          <select id="recognition_method" onchange="switchAlgo(this.value)" style="width: 100%; padding: 6px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-primary); font-size: 12px; cursor: pointer;">
+            <option value="PCA">PCA</option>
+            <option value="PCA+LDA" selected>PCA + LDA</option>
+          </select>
+        </div>
+        <button id="btn_start" class="btn-start idle" onclick="toggleRecognition()">▶ Start recognition</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Pipeline</div>
+        <div class="pipeline" id="pipeline-steps"></div>
+      </div>
+
+      <div class="log-wrap">
+        <div class="log-header">Event log</div>
+        <div class="log-body" id="log-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GALLERY = ['Fathiah','Fazil','Jasper','Joe','Mikail','Roy','Syarah'];
+const AVATARS = ['👩','👨','👨','👨','👨','👨','👩'];
+
+const PIPELINE = {
+  'PCA': [
+    {label:'Viola-Jones detection'},
+    {label:'Grayscale + alignment'},
+    {label:'CLAHE normalization'},
+    {label:'PCA projection (k=50)'},
+    {label:'1-NN classifier'},
+  ],
+  'PCA+LDA': [
+    {label:'Viola-Jones detection'},
+    {label:'Grayscale + alignment'},
+    {label:'CLAHE normalization'},
+    {label:'PCA projection (k=50)'},
+    {label:'LDA projection'},
+    {label:'1-NN classifier'},
+  ],
+  'DeepLearning': [
+    {label:'MTCNN face detection'},
+    {label:'Face alignment (5-pt)'},
+    {label:'FaceNet embedding (512-d)'},
+    {label:'Cosine similarity'},
+    {label:'Threshold decision'},
+  ],
+};
+
+const METRICS = {
+  'PCA': [
+    ['Algorithm','PCA (Eigenfaces)'],['Detector','Viola-Jones Haar'],['Image size','90 × 90 px'],
+    ['Feature dim (raw)','8,100'],['PCA components','50'],['Classifier','1-NN (L2)'],
+    ['Train accuracy','100%'],['Test accuracy','52.2%'],['Normalization','CLAHE (clip=2.0)'],
+  ],
+  'PCA+LDA': [
+    ['Algorithm','PCA + LDA'],['Detector','Viola-Jones Haar'],['Image size','90 × 90 px'],
+    ['Feature dim (raw)','8,100'],['PCA components','50'],['LDA components','6 (C−1)'],
+    ['Classifier','1-NN (L2)'],['Train accuracy','100%'],['Test accuracy','52.2%'],
+  ],
+  'DeepLearning': [
+    ['Algorithm','FaceNet + MTCNN'],['Backbone','InceptionResNetV1'],['Embedding dim','512'],
+    ['Training data','VGGFace2'],['Detector','MTCNN (3-stage)'],['Distance','Cosine similarity'],
+    ['Threshold','0.75'],['Train accuracy','—'],['Test accuracy','—'],
+  ],
+};
+
+let running = false;
+let algo = 'PCA+LDA';
+let frameCount = 0;
+let fps = 0;
+let detTimer, fpsTimer;
+
+const MOCK_DETS = [
+  {name:'Jasper',conf:94,match:true},
+  {name:'Roy',conf:87,match:true},
+  {name:'UNKNOWN',conf:31,match:false},
+  {name:'Fazil',conf:91,match:true},
+  {name:'Syarah',conf:89,match:true},
+];
+
+function ts() {
+  return new Date().toTimeString().slice(0,8);
+}
+
+function addLog(msg, type='') {
+  const lb = document.getElementById('log-body');
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+  el.innerHTML = `<span class="log-time">${ts()}</span><span class="log-msg ${type}">${msg}</span>`;
+  lb.appendChild(el);
+  lb.scrollTop = lb.scrollHeight;
+}
+
+function renderGallery() {
+  const g = document.getElementById('gallery-grid');
+  g.innerHTML = GALLERY.map((n,i) => `
+    <div class="person-card">
+      <div class="person-avatar"><img src="/static/gallery/P_${n}.jpg" alt="${n}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+      <div class="person-name">${n}</div>
+      <div class="person-status">● Enrolled</div>
+    </div>`).join('');
+}
+
+function renderMetrics() {
+  const t = document.getElementById('metrics-table');
+  t.innerHTML = (METRICS[algo]||METRICS['PCA+LDA']).map(([k,v]) =>
+    `<div class="met-row"><span class="met-key">${k}</span><span class="met-val">${v}</span></div>`
+  ).join('');
+}
+
+function renderPipeline(active) {
+  const steps = PIPELINE[algo] || PIPELINE['PCA+LDA'];
+  document.getElementById('pipeline-steps').innerHTML = steps.map((s,i) => `
+    <div class="pipe-step">
+      <span class="pipe-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="pipe-label ${active ? 'active-step' : ''}">${s.label}</span>
+      <span class="pipe-dot ${active ? 'active-dot' : 'dim'}"></span>
+    </div>`).join('');
+}
+
+function switchAlgo(a) {
+  algo = a;
+  document.getElementById('method-val').textContent = a === 'DeepLearning' ? 'Deep learning' : a;
+  document.getElementById('recognition_method').value = a;
+  renderPipeline(running);
+  renderMetrics();
+  addLog(`Algorithm switched → ${a}`, 'warn');
+}
+
+function setDetection(det) {
+  const dc = document.getElementById('det-content');
+  const dm = document.getElementById('det-meta');
+  const box = document.getElementById('det-box');
+  if (!det) {
+    dc.innerHTML = '<span class="no-det">No detection</span>';
+    dm.style.display = 'none';
+    if (box) box.remove();
+    return;
+  }
+  dc.innerHTML = `
+    <div class="det-label">Identity</div>
+    <div class="det-name ${det.match ? 'match' : 'unknown'}">${det.name}</div>`;
+  dm.style.display = 'flex';
+  dm.innerHTML = `
+    <span class="chip chip-conf">conf ${det.conf}%</span>
+    <span class="chip ${det.match ? 'chip-match' : 'chip-unknown'}">${det.match ? 'Match found' : 'Not in gallery'}</span>`;
+
+  const cam = document.getElementById('cam-area');
+  let b = document.getElementById('det-box');
+  if (!b) { b = document.createElement('div'); b.id='det-box'; cam.appendChild(b); }
+  b.className = 'det-box' + (det.match ? '' : ' unknown');
+}
+
+function toggleRecognition() {
+  running = !running;
+  const btn = document.getElementById('btn_start');
+  const badge = document.getElementById('status-badge');
+  const placeholder = document.getElementById('cam-placeholder');
+
+  if (running) {
+    btn.textContent = '◼ Stop recognition';
+    btn.className = 'btn-start live';
+    badge.className = 'badge badge-live';
+    badge.innerHTML = '<span class="badge-dot"></span> Live';
+    placeholder.style.display = 'none';
+    document.getElementById('video_feed').style.display = 'block';
+
+    // Send settings to Flask backend
+    const method = document.getElementById('recognition_method').value;
+    const confidence = document.getElementById('confidence_thresh').value;
+    const pca_k = document.getElementById('pca_components').value;
+    
+    fetch('/update_settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        method: method,
+        confidence: confidence,
+        pca_k: pca_k
+      })
+    })
+    .then(response => response.json())
+    .then(data => console.log("Settings sent to Flask:", data))
+    .catch(err => addLog(`Error: ${err}`, 'danger'));
+
+    // Add live overlay text
+    const cam = document.getElementById('cam-area');
+    let ind = document.getElementById('cam-live-ind');
+    if (!ind) {
+      ind = document.createElement('div');
+      ind.id = 'cam-live-ind';
+      ind.className = 'cam-live-indicator';
+      ind.innerHTML = '<span class="badge-dot" style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite"></span> Live';
+      cam.appendChild(ind);
+    }
+
+    renderPipeline(true);
+    addLog(`Recognition started — ${algo}`, 'success');
+
+    fpsTimer = setInterval(() => {
+      frameCount += Math.floor(Math.random()*5)+23;
+      fps = Math.floor(Math.random()*8)+22;
+      document.getElementById('fps-val').textContent = fps;
+      document.getElementById('frame-val').textContent = frameCount;
+    }, 1000);
+
+    detTimer = setInterval(() => {
+      const d = MOCK_DETS[Math.floor(Math.random()*MOCK_DETS.length)];
+      setDetection(d);
+      addLog(
+        d.match ? `Recognized: ${d.name} (conf: ${d.conf}%)` : `Unknown face — dist > threshold`,
+        d.match ? 'success' : 'danger'
+      );
+    }, 2500);
+
+  } else {
+    btn.textContent = '▶ Start recognition';
+    btn.className = 'btn-start idle';
+    badge.className = 'badge badge-idle';
+    badge.innerHTML = '<span class="badge-dot"></span> Idle';
+    placeholder.style.display = 'block';
+    document.getElementById('video_feed').style.display = 'none';
+    document.getElementById('fps-val').textContent = '—';
+    document.getElementById('frame-val').textContent = '—';
+    const ind = document.getElementById('cam-live-ind');
+    if (ind) ind.remove();
+    renderPipeline(false);
+    setDetection(null);
+    clearInterval(detTimer);
+    clearInterval(fpsTimer);
+    addLog('Recognition stopped', 'warn');
+  }
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// Init
+renderGallery();
+renderMetrics();
+renderPipeline(false);
+addLog('System initialized');
+addLog('Haar cascade loaded');
+addLog('PCA model loaded — k=50', 'success');
+addLog('Gallery: 7 persons enrolled', 'success');
+addLog('Camera ready');
+</script>
